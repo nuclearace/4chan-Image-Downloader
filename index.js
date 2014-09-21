@@ -68,7 +68,7 @@ Grabber.prototype.getThreadJSON = function(board, thread) {
 
 Grabber.prototype.urlRetrieve = function(transport, options, callback) {
 	var dom = domain.create()
-	console.log("Getting " + options.host + options.path)
+	console.log("Get: " + options.host + options.path)
 	dom.on("error", function(err) {
 		console.log("Error")
 	})
