@@ -1,0 +1,6 @@
+{
+	"author": "nuclearace",
+	"dependencies": {
+		"limiter": "~1.0.5"
+	}
+}
