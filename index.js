@@ -8,6 +8,9 @@ var imageLimiter = new RateLimiter(1, "second")
 
 function Grabber(thread) {
 	var self = this
+	var eightChan = thread.match(/https?\:\/\/8chan\.co\/(.*)\/res\/(\d*)\.html/)
+	if (eightChan)
+		return new EightChanGrabber(eightChan)
 	var threadInfo = thread.match(/https?\:\/\/boards\.4chan\.org\/(.*)\/thread\/(\d*)/)
 	if (!threadInfo)
 		return console.log("failed")
@@ -24,21 +27,30 @@ Grabber.prototype.getImages = function(json) {
 	var posts = threadJSON["posts"]
 
 	var createFun = function(filename, ext, tim) {
-		var options = {
-			host: "i.4cdn.org",
-			path: "/" + self.board + "/" + tim + ext
-		}
+		fs.exists(self.board + "_" + self.thread + "/" + tim + ext, function(exists) {
+			if (exists)
+				return console.log("Already exists: " + tim + ext)
+			else
+				postCheck()
+		})
 
-		return imageLimiter.removeTokens(1, function() {
-			self.urlRetrieve(https, options, function(code, buffer) {
-				fs.writeFile(self.board + "_" + self.thread + "/" + tim + ext, buffer, 'binary', function(err) {
-					if (err)
-						console.log(err)
-					else
-						console.log("Got: " + tim + ext)
+		var postCheck = function() {
+			var options = {
+				host: "i.4cdn.org",
+				path: "/" + self.board + "/" + tim + ext
+			}
+
+			return imageLimiter.removeTokens(1, function() {
+				self.urlRetrieve(https, options, function(code, buffer) {
+					fs.writeFile(self.board + "_" + self.thread + "/" + tim + ext, buffer, 'binary', function(err) {
+						if (err)
+							console.log(err)
+						else
+							console.log("Got: " + tim + ext)
+					})
 				})
 			})
-		})
+		}
 	}
 
 	for (var i = 0; i < posts.length; i++) {
@@ -67,6 +79,96 @@ Grabber.prototype.getThreadJSON = function(board, thread) {
 };
 
 Grabber.prototype.urlRetrieve = function(transport, options, callback) {
+	var dom = domain.create()
+	console.log("Get: " + options.host + options.path)
+	dom.on("error", function(err) {
+		console.log("Error")
+	})
+	dom.run(function() {
+		var req = transport.request(options, function(res) {
+			res.setEncoding("binary")
+			var buffer = ""
+			res.on("data", function(chunk) {
+				buffer += chunk
+			})
+			res.on("end", function() {
+				callback(res.statusCode, buffer)
+			})
+		})
+		req.end()
+	})
+};
+
+function EightChanGrabber(threadInfo) {
+	var self = this
+
+	if (!threadInfo)
+		return console.log("failed")
+
+	this.board = threadInfo[1]
+	this.thread = threadInfo[2]
+
+	fs.mkdir(path.join(__dirname, this.board + "_" + this.thread), self.getThreadJSON(this.board, this.thread))
+}
+
+EightChanGrabber.prototype.getThreadJSON = function(board, thread) {
+	var self = this
+	var options = {
+		host: "8chan.co",
+		path: "/" + board + "/res/" + thread + ".json"
+	}
+
+	imageLimiter.removeTokens(1, function() {
+		self.urlRetrieve(https, options, function(code, json) {
+			if (json)
+				self.getImages(json)
+		})
+	})
+};
+
+EightChanGrabber.prototype.getImages = function(json) {
+	var self = this
+	var threadJSON = JSON.parse(json)
+	var posts = threadJSON["posts"]
+
+	var createFun = function(filename, ext, tim) {
+		fs.exists(self.board + "_" + self.thread + "/" + tim + ext, function(exists) {
+			if (exists)
+				return console.log("Already exists: " + tim + ext)
+			else
+				postCheck()
+		})
+
+		var postCheck = function() {
+			var options = {
+				host: "8chan.co",
+				path: "/" + self.board + "/" + "src/" + tim + ext
+			}
+
+			return imageLimiter.removeTokens(1, function() {
+				self.urlRetrieve(https, options, function(code, buffer) {
+					fs.writeFile(self.board + "_" + self.thread + "/" + tim + ext, buffer, 'binary', function(err) {
+						if (err)
+							console.log(err)
+						else
+							console.log("Got: " + tim + ext)
+					})
+				})
+			})
+		}
+	}
+
+	for (var i = 0; i < posts.length; i++) {
+		if ("filename" in posts[i]) {
+			var filename = posts[i]["filename"]
+			var ext = posts[i]["ext"]
+			var tim = posts[i]["tim"]
+			createFun(filename, ext, tim)
+		}
+	}
+};
+
+EightChanGrabber.prototype.urlRetrieve = function(transport, options, callback) {
 	var dom = domain.create()
 	console.log("Get: " + options.host + options.path)
 	dom.on("error", function(err) {
