@@ -48,7 +48,7 @@ Grabber.prototype.getImages = function(json, eightChan) {
 			if (eightChan) {
 				options = {
 					host: "8chan.co",
-					path: "/" + self.board + "/" + "src/" + tim + ext
+					path: "/" + self.board + "/src/" + tim + ext
 				}
 			}
 
