@@ -15,7 +15,7 @@ function Grabber(thread) {
 		return fs.mkdir(path.join(__dirname, this.board + "_" + this.thread),
 			self.getThreadJSON(this.board, this.thread, true))
 	}
-	return new EightChanGrabber(eightChan)
+
 	var threadInfo = thread.match(/https?\:\/\/boards\.4chan\.org\/(.*)\/thread\/(\d*)/)
 	if (!threadInfo)
 		return console.log("failed")
