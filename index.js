@@ -8,7 +8,7 @@ var imageLimiter = new RateLimiter(1, "second")
 
 function Grabber(thread) {
 	var self = this
-	var eightChan = thread.match(/https?\:\/\/8chan\.co\/(.*)\/res\/(\d*)\.html/)
+	var eightChan = thread.match(/https?\:\/\/8ch\.net\/(.*)\/res\/(\d*)\.html/)
 	if (eightChan) {
 		this.board = eightChan[1]
 		this.thread = eightChan[2]
@@ -47,7 +47,7 @@ Grabber.prototype.getImages = function(json, eightChan) {
 
 			if (eightChan) {
 				options = {
-					host: "8chan.co",
+					host: "8ch.net",
 					path: "/" + self.board + "/src/" + tim + ext
 				}
 			}
@@ -84,7 +84,7 @@ Grabber.prototype.getThreadJSON = function(board, thread, eightChan) {
 
 	if (eightChan) {
 		options = {
-			host: "8chan.co",
+			host: "8ch.net",
 			path: "/" + board + "/res/" + thread + ".json"
 		}
 	}
